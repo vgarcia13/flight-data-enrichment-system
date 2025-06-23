@@ -1,0 +1,13 @@
+<table>
+  <tr><th>Task ID</th><th>Status</th><th>Result</th></tr>
+  {% for task in tasks %}
+    <tr>
+      <td>{{ task.task_id }}</td>
+      <td>{{ task.status }}</td>
+      <td>{{ task.result }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% if not tasks %}
+  <p>No completed tasks found.</p>
+{% endif %}

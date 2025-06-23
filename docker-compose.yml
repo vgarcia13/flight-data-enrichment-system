@@ -1,0 +1,75 @@
+version: "3.9"
+services:
+  fastapi:
+    container_name: fastapi
+    build: .
+    command: uvicorn backend.fastapi_app.main:app --host 0.0.0.0 --port 8080
+    volumes:
+      - .:/app
+      - sqlite_data:/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.django_app.django_app.settings
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////data/db.sqlite3
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+
+  django:
+    container_name: django
+    build: .
+    command: >
+      sh -c "python backend/django_app/manage.py makemigrations &&
+             python backend/django_app/manage.py migrate &&
+             python backend/django_app/manage.py collectstatic --noinput &&
+             gunicorn django_app.wsgi:application --chdir backend/django_app --bind 0.0.0.0:8000 --timeout 120"
+    volumes:
+      - .:/app
+      - sqlite_data:/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.django_app.django_app.settings
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////data/db.sqlite3
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - SERPAPI_KEY=${SERPAPI_KEY}
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+
+  celery:
+    container_name: celery
+    build: .
+    command: celery -A django_app worker --loglevel=info
+    working_dir: /app/backend/django_app
+    volumes:
+      - .:/app
+      - sqlite_data:/data
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.django_app.django_app.settings
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////data/db.sqlite3
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}
+    depends_on:
+      - redis
+
+  redis:
+    container_name: redis
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+volumes:
+  sqlite_data:
