@@ -1,4 +1,4 @@
-# FlyFlat Flight Data Enrichment System
+# Flight Data Enrichment System
 
 A system for managing, enriching, and visualizing flight data. It features both Django and FastAPI backends, background task processing with Celery, and a dashboard for monitoring. The project is containerized with Docker and uses SQLite for development.
 
